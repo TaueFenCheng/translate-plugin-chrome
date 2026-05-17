@@ -1,0 +1,123 @@
+#jp-translator-subtitle-container {
+  position: fixed;
+  z-index: 2147483647;
+  pointer-events: auto;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans JP", "Noto Sans SC", sans-serif;
+  transition: opacity 0.3s ease;
+}
+
+#jp-translator-subtitle-container.position-bottom-right {
+  bottom: 20px;
+  right: 20px;
+}
+
+#jp-translator-subtitle-container.position-bottom-center {
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+#jp-translator-subtitle-container.position-top-right {
+  top: 20px;
+  right: 20px;
+}
+
+#jp-translator-subtitle-container .subtitle-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 8px 8px 0 0;
+  cursor: move;
+  user-select: none;
+}
+
+#jp-translator-subtitle-container .subtitle-header .title {
+  font-size: 11px;
+  color: #aaa;
+}
+
+#jp-translator-subtitle-container .subtitle-header .controls {
+  display: flex;
+  gap: 6px;
+}
+
+#jp-translator-subtitle-container .subtitle-header button {
+  background: none;
+  border: none;
+  color: #aaa;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 4px;
+}
+
+#jp-translator-subtitle-container .subtitle-header button:hover {
+  color: #fff;
+}
+
+#jp-translator-subtitle-container .subtitle-list {
+  max-height: 300px;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.75);
+  border-radius: 0 0 8px 8px;
+  padding: 8px 12px;
+  min-width: 280px;
+  max-width: 400px;
+}
+
+#jp-translator-subtitle-container .subtitle-item {
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  animation: subtitleFadeIn 0.3s ease;
+}
+
+#jp-translator-subtitle-container .subtitle-item:last-child {
+  border-bottom: none;
+}
+
+#jp-translator-subtitle-container .subtitle-item.partial {
+  opacity: 0.6;
+}
+
+#jp-translator-subtitle-container .subtitle-item .jp-text {
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 2px;
+  line-height: 1.4;
+}
+
+#jp-translator-subtitle-container .subtitle-item .zh-text {
+  font-size: 14px;
+  color: #fff;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+#jp-translator-subtitle-container .subtitle-item.hidden-jp .jp-text {
+  display: none;
+}
+
+@keyframes subtitleFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+#jp-translator-subtitle-container .subtitle-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+#jp-translator-subtitle-container .subtitle-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#jp-translator-subtitle-container .subtitle-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}

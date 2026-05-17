@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>日语实时翻译字幕</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <h1>🎌 日语实时翻译</h1>
+    
+    <div class="status-bar">
+      <span id="statusIndicator" class="status-dot offline"></span>
+      <span id="statusText">未连接</span>
+    </div>
+
+    <div class="controls">
+      <button id="startBtn" class="btn primary">开始翻译</button>
+      <button id="stopBtn" class="btn secondary" disabled>停止</button>
+    </div>
+
+    <div class="settings">
+      <label>
+        后端地址
+        <input type="text" id="serverUrl" placeholder="ws://localhost:8000/ws" value="ws://localhost:8000/ws">
+      </label>
+      <label>
+        <input type="checkbox" id="showOriginal" checked>
+        显示日文原文
+      </label>
+      <label>
+        字幕位置
+        <select id="subtitlePosition">
+          <option value="bottom-right">右下角</option>
+          <option value="bottom-center">底部居中</option>
+          <option value="top-right">右上角</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="info">
+      <p id="captureInfo">请先打开需要翻译的页面</p>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

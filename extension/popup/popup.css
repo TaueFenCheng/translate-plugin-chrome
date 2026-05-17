@@ -1,0 +1,117 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 320px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #1a1a2e;
+  color: #eee;
+}
+
+.container {
+  padding: 16px;
+}
+
+h1 {
+  font-size: 18px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #16213e;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.status-dot.offline { background: #666; }
+.status-dot.connecting { background: #f39c12; animation: pulse 1s infinite; }
+.status-dot.online { background: #2ecc71; }
+.status-dot.error { background: #e74c3c; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn.primary {
+  background: #3498db;
+  color: white;
+}
+
+.btn.secondary {
+  background: #e74c3c;
+  color: white;
+}
+
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: #16213e;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.settings label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #aaa;
+}
+
+.settings input[type="text"],
+.settings select {
+  padding: 6px 8px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: #0f3460;
+  color: #eee;
+  font-size: 12px;
+}
+
+.settings input[type="checkbox"] {
+  margin-right: 6px;
+}
+
+.info {
+  font-size: 11px;
+  color: #888;
+  text-align: center;
+}
