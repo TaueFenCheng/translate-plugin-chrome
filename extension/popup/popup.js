@@ -31,7 +31,7 @@ async function saveSettings() {
 }
 
 function setStatus(status, text) {
-  statusIndicator.className = `status-dot ${status}`;
+  statusIndicator.className = "status-dot " + status;
   statusText.textContent = text;
 }
 
@@ -46,9 +46,9 @@ async function startCapture() {
       return;
     }
 
-    console.log("[Popup] Starting capture for tab:", tab.id);
-    setStatus("connecting", "连接中...");
-    captureInfo.textContent = `正在捕获标签页: ${tab.title}`;
+    console.log("Starting capture for tab:", tab.id);
+    setStatus("connecting", "Connecting...");
+    captureInfo.textContent = "Capturing: " + tab.title;
 
     chrome.runtime.sendMessage({
       action: "start_capture",
@@ -62,19 +62,19 @@ async function startCapture() {
     stopBtn.disabled = false;
     isCapturing = true;
   } catch (err) {
-    console.error("[Popup] Start error:", err);
-    setStatus("error", "启动失败");
+    console.error("Start error:", err);
+    setStatus("error", "Start failed");
     captureInfo.textContent = err.message;
   }
 }
 
 function stopCapture() {
-  console.log("[Popup] Stopping capture");
+  console.log("Stopping capture");
   chrome.runtime.sendMessage({ action: "stop_capture" });
   startBtn.disabled = false;
   stopBtn.disabled = true;
   isCapturing = false;
-  setStatus("offline", "已停止");
+  setStatus("offline", "Stopped");
 }
 
 startBtn.addEventListener("click", startCapture);
@@ -84,7 +84,7 @@ showOriginalCheckbox.addEventListener("change", saveSettings);
 subtitlePositionSelect.addEventListener("change", saveSettings);
 
 chrome.runtime.onMessage.addListener((message) => {
-  console.log("[Popup] Received:", message);
+  console.log("Popup received:", message);
   if (message.action === "status_update") {
     setStatus(message.status, message.text);
   }

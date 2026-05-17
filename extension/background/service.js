@@ -4,12 +4,19 @@ let capturedTabId = null;
 
 const OFFSCREEN_DOCUMENT_PATH = "/offscreen/offscreen.html";
 
+const STATUS_TEXTS = {
+  connecting: "Connecting...",
+  online: "Connected",
+  offline: "Stopped",
+  error: "Error",
+};
+
 function setStatus(status, text) {
   if (capturedTabId) {
     chrome.tabs.sendMessage(capturedTabId, {
       action: "status_update",
       status,
-      text,
+      text: text || STATUS_TEXTS[status] || status,
     }).catch(() => {});
   }
 }
@@ -19,6 +26,18 @@ function sendToCapturedTab(message) {
   chrome.tabs.sendMessage(capturedTabId, message).catch((err) => {
     console.log("Failed to send to tab", capturedTabId, err.message);
   });
+}
+
+async function injectContentScript(tabId) {
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      files: ["content/content.js"],
+    });
+    console.log("Content script injected into tab:", tabId);
+  } catch (err) {
+    console.log("Could not inject content script:", err.message);
+  }
 }
 
 async function hasOffscreenDocument() {
@@ -64,7 +83,18 @@ async function startCapture(tabId, serverUrl, showOriginal, subtitlePosition) {
 
   try {
     console.log("Starting capture for tab:", tabId, "serverUrl:", serverUrl);
-    setStatus("connecting", "正在初始化...");
+
+    const tab = await chrome.tabs.get(tabId);
+    console.log("Tab URL:", tab.url);
+
+    if (tab.url.startsWith("chrome://") || tab.url.startsWith("chrome-extension://") || tab.url.startsWith("edge://")) {
+      throw new Error("Cannot use on Chrome internal pages. Please switch to a regular webpage (e.g., YouTube)");
+    }
+
+    await injectContentScript(tabId);
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    setStatus("connecting", "Initializing...");
 
     await setupOffscreenDocument();
     console.log("Offscreen document ready");
@@ -74,11 +104,11 @@ async function startCapture(tabId, serverUrl, showOriginal, subtitlePosition) {
     });
 
     if (!streamId) {
-      throw new Error("无法获取标签页音频流 ID");
+      throw new Error("Failed to get tab audio stream ID");
     }
     console.log("Got streamId:", streamId);
 
-    setStatus("connecting", "正在启动音频捕获...");
+    setStatus("connecting", "Starting audio capture...");
     const response = await sendToOffscreen({
       type: "start-capture",
       target: "offscreen",
@@ -89,7 +119,7 @@ async function startCapture(tabId, serverUrl, showOriginal, subtitlePosition) {
     console.log("Offscreen response:", response);
 
     if (!response || !response.success) {
-      throw new Error(response?.error || "Offscreen 启动失败");
+      throw new Error(response?.error || "Offscreen failed to start");
     }
 
     isCapturing = true;
@@ -103,7 +133,7 @@ async function startCapture(tabId, serverUrl, showOriginal, subtitlePosition) {
 
     chrome.action.setBadgeText({ text: "ON" });
     chrome.action.setBadgeBackgroundColor({ color: "#3498db" });
-    setStatus("online", "正在捕获音频");
+    setStatus("online", "Capturing audio");
   } catch (err) {
     console.error("Capture error:", err);
     sendToCapturedTab({
@@ -129,7 +159,7 @@ function stopCapture() {
   capturedTabId = null;
 
   chrome.action.setBadgeText({ text: "" });
-  setStatus("offline", "已停止");
+  setStatus("offline", "Stopped");
 
   chrome.offscreen.closeDocument().catch(() => {});
 }

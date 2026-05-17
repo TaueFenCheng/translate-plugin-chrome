@@ -14,6 +14,7 @@ async def startup():
     print(f"Starting server on {settings.host}:{settings.port}")
     print(f"Local ASR: {'enabled' if settings.local_asr_model else 'disabled'}")
     print(f"Cloud ASR: {settings.cloud_asr_provider or 'disabled'}")
+    print(f"Translation provider: {settings.translation_provider}")
 
 
 @app.on_event("shutdown")
@@ -26,6 +27,7 @@ async def shutdown():
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
+    print("WebSocket connection accepted")
 
     session_id = id(websocket)
     handler = SessionHandler()
@@ -37,21 +39,30 @@ async def websocket_endpoint(websocket: WebSocket):
             message = json.loads(data)
 
             if message.get("type") == "init":
-                print(f"Session {session_id} initialized")
+                print(f"Session {session_id} initialized with config:", message.get("config"))
                 continue
 
             if message.get("type") == "audio_chunk":
+                chunk_size = len(message["data"])
+                print(f"Received audio chunk: {chunk_size} bytes, seq: {message.get('seq')}")
+                
                 result = await handler.handle_audio_chunk(message["data"])
                 if result:
+                    print(f"Sending result: {result.get('text_jp', '')[:50]} -> {result.get('text_zh', '')[:50]}")
                     await websocket.send_text(json.dumps(result))
+                else:
+                    print("No result from handler (VAD filtered or processing)")
 
     except WebSocketDisconnect:
         print(f"Session {session_id} disconnected")
     except Exception as e:
         print(f"Session {session_id} error: {e}")
+        import traceback
+        traceback.print_exc()
     finally:
         handler.reset()
         active_sessions.pop(session_id, None)
+        print(f"Session {session_id} cleaned up")
 
 
 @app.get("/health")

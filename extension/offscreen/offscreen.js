@@ -53,11 +53,23 @@ async function startCapture(streamId, serverUrl) {
       video: false,
     });
 
-    console.log("[Offscreen] Got mediaStream");
+    console.log("[Offscreen] Got mediaStream, tracks:", mediaStream.getTracks().length);
 
-    audioContext = new AudioContext({ sampleRate: SAMPLE_RATE });
+    audioContext = new (window.AudioContext || window.webkitAudioContext)({ 
+      sampleRate: SAMPLE_RATE 
+    });
+    
+    // 确保 AudioContext 处于运行状态（允许播放）
+    if (audioContext.state === "suspended") {
+      await audioContext.resume();
+    }
+    console.log("[Offscreen] AudioContext state:", audioContext.state);
+
     const source = audioContext.createMediaStreamSource(mediaStream);
-    const destination = audioContext.createMediaStreamDestination();
+    
+    // 创建分析器用于提取音频数据
+    const analyser = audioContext.createAnalyser();
+    analyser.fftSize = 8192;
     
     audioProcessor = audioContext.createScriptProcessor(4096, 1, 1);
     audioProcessor.onaudioprocess = (e) => {
@@ -74,18 +86,23 @@ async function startCapture(streamId, serverUrl) {
       }
     };
 
-    source.connect(audioProcessor);
-    audioProcessor.connect(destination);
+    // 关键：正确路由音频
+    // source -> processor (提取数据) -> destination (播放给用户)
+    source.connect(analyser);
+    analyser.connect(audioProcessor);
     audioProcessor.connect(audioContext.destination);
+    
+    // 同时直接连接 source 到 destination，确保音频播放
+    source.connect(audioContext.destination);
 
-    console.log("[Offscreen] Audio connected");
+    console.log("[Offscreen] Audio routing configured");
     connectWebSocket(serverUrl);
     isCapturing = true;
 
     chrome.runtime.sendMessage({
       action: "status_update",
       status: "online",
-      text: "正在捕获音频",
+      text: "Capturing audio",
     });
   } catch (err) {
     console.error("[Offscreen] Capture error:", err);
@@ -106,7 +123,7 @@ function connectWebSocket(serverUrl) {
     chrome.runtime.sendMessage({
       action: "status_update",
       status: "online",
-      text: "已连接",
+      text: "Connected",
     });
     ws.send(JSON.stringify({
       type: "init",
@@ -141,7 +158,7 @@ function connectWebSocket(serverUrl) {
     chrome.runtime.sendMessage({
       action: "status_update",
       status: "offline",
-      text: "连接断开",
+      text: "Disconnected",
     });
     ws = null;
     if (isCapturing) {
@@ -173,7 +190,7 @@ function stopCapture() {
   chrome.runtime.sendMessage({
     action: "status_update",
     status: "offline",
-    text: "已停止",
+    text: "Stopped",
   });
 }
 
