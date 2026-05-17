@@ -60,3 +60,7 @@ class OpenAITranslator:
                     yield chunk.choices[0].delta.content
         except Exception as e:
             print(f"Streaming translation error: {e}")
+            # Fallback to non-streaming
+            result = await self.translate(text)
+            if result:
+                yield result

@@ -41,12 +41,17 @@ class AnthropicTranslator:
             return
 
         try:
-            response = await self.client.messages.create(
+            async with self.client.messages.stream(
                 model=self.model,
                 system=SYSTEM_PROMPT,
                 messages=[{"role": "user", "content": text}],
                 max_tokens=500,
-            )
-            yield response.content[0].text.strip()
+            ) as stream:
+                async for text_event in stream.text_stream:
+                    yield text_event
         except Exception as e:
             print(f"Streaming translation error: {e}")
+            # Fallback to non-streaming
+            result = await self.translate(text)
+            if result:
+                yield result

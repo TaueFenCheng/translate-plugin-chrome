@@ -3,7 +3,7 @@ import asyncio
 import base64
 import numpy as np
 import time
-from typing import Dict, Optional
+from typing import Dict, Optional, AsyncGenerator
 from fastapi import WebSocket
 from audio.vad import VoiceActivityDetector
 from audio.stream import AudioStreamBuffer
@@ -52,6 +52,31 @@ class SessionHandler:
             print(f"Audio processing error: {e}")
             return None
 
+    async def handle_audio_chunk_streaming(
+        self, chunk_data: str, websocket: WebSocket
+    ) -> None:
+        try:
+            audio_bytes = base64.b64decode(chunk_data)
+            audio_int16 = np.frombuffer(audio_bytes, dtype=np.int16)
+            audio_float = audio_int16.astype(np.float32) / 32768.0
+
+            self.audio_buffer.add_chunk(audio_float)
+            self.last_audio_time = time.time()
+
+            if not self.vad.has_speech(self.audio_buffer.get_buffer()):
+                return
+
+            if self.audio_buffer.duration < self.MIN_SPEECH_DURATION:
+                return
+
+            if not self.is_processing:
+                self.is_processing = True
+                await self._process_audio_streaming(websocket)
+                self.is_processing = False
+
+        except Exception as e:
+            print(f"Audio processing error: {e}")
+
     async def _process_audio(self) -> Optional[dict]:
         audio_data = self.audio_buffer.get_and_clear()
 
@@ -73,6 +98,53 @@ class SessionHandler:
             "text_zh": zh_text or "",
             "id": current_id,
         }
+
+    async def _process_audio_streaming(self, websocket: WebSocket) -> None:
+        audio_data = self.audio_buffer.get_and_clear()
+
+        if len(audio_data) < self.SAMPLE_RATE:
+            return
+
+        jp_text = self.asr_engine.transcribe(audio_data, self.SAMPLE_RATE)
+        if not jp_text:
+            return
+
+        self.current_sentence_id += 1
+        current_id = self.current_sentence_id
+
+        # 先发送部分结果（日文识别完成）
+        await websocket.send_text(
+            json.dumps({
+                "type": "partial",
+                "text_jp": jp_text,
+                "text_zh": "翻译中...",
+                "id": current_id,
+            })
+        )
+
+        # 使用流式翻译，逐步发送中文结果
+        zh_text_parts = []
+        async for chunk in self.translator.translate_stream(jp_text):
+            zh_text_parts.append(chunk)
+            await websocket.send_text(
+                json.dumps({
+                    "type": "partial",
+                    "text_jp": jp_text,
+                    "text_zh": "".join(zh_text_parts),
+                    "id": current_id,
+                })
+            )
+
+        # 发送最终结果
+        final_zh = "".join(zh_text_parts)
+        await websocket.send_text(
+            json.dumps({
+                "type": "final",
+                "text_jp": jp_text,
+                "text_zh": final_zh,
+                "id": current_id,
+            })
+        )
 
     def reset(self):
         self.audio_buffer.clear()

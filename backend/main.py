@@ -46,12 +46,8 @@ async def websocket_endpoint(websocket: WebSocket):
                 chunk_size = len(message["data"])
                 print(f"Received audio chunk: {chunk_size} bytes, seq: {message.get('seq')}")
                 
-                result = await handler.handle_audio_chunk(message["data"])
-                if result:
-                    print(f"Sending result: {result.get('text_jp', '')[:50]} -> {result.get('text_zh', '')[:50]}")
-                    await websocket.send_text(json.dumps(result))
-                else:
-                    print("No result from handler (VAD filtered or processing)")
+                # 使用流式处理
+                await handler.handle_audio_chunk_streaming(message["data"], websocket)
 
     except WebSocketDisconnect:
         print(f"Session {session_id} disconnected")
